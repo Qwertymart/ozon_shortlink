@@ -8,12 +8,14 @@ const (
 	resultLen = 10
 )
 
-func Encode(n uint64) string {
+func Encode(n uint64) (string, error) {
 	var sb strings.Builder
 
 	// генерация символов
 	for n > 0 {
-		sb.WriteByte(alphabet[n%base])
+		if err := sb.WriteByte(alphabet[n%base]); err != nil{
+			return "", err
+		}
 		n /= base
 	}
 
@@ -24,5 +26,5 @@ func Encode(n uint64) string {
 		result += string(alphabet[0])
 	}
 
-	return result
+	return result, nil
 }
