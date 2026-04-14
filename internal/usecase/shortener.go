@@ -1,9 +1,9 @@
 package usecase
 
-type ShrotnerUseCase struct{
+type ShrotenerUseCase struct{
 	repo URLRepository
 }
 
-func NewSrotner(r URLRepository) *ShrotnerUseCase{
+func NewSrotener(r URLRepository) *ShrotnerUseCase{
 	return &ShrotnerUseCase{ repo: r}
 }
