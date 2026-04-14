@@ -1,4 +1,4 @@
-package repository
+package inmemory
 
 import (
 	"context"
@@ -23,12 +23,7 @@ func (r *MemoryRepository) GetNextID(ctx context.Context) (uint64, error) {
 	return r.db.IncrAndGet(), nil
 }
 
-func (r *MemoryRepository) Save(ctx context.Context, url entity.URL) error {
-	// проверка на уникальность
-	if _, exists := r.reverseMap.Get(url.Full); exists {
-		return entity.ErrConflict
-	}
-
+func (r *MemoryRepository) Save(ctx context.Context, url entity.URL) error { 
 	r.db.Set(url.Short, url.Full)
 	r.reverseMap.Set(url.Full, url.Short)
 	return nil
@@ -36,6 +31,14 @@ func (r *MemoryRepository) Save(ctx context.Context, url entity.URL) error {
 
 func (r *MemoryRepository) GetByShort(ctx context.Context, short string) (entity.URL, error) {
 	full, exists := r.db.Get(short)
+	if !exists {
+		return entity.URL{}, entity.ErrNotFound
+	}
+	return entity.URL{Full: full, Short: short}, nil
+}
+
+func (r *MemoryRepository) GetByFull(ctx context.Context, full string) (entity.URL, error) {
+	short, exists := r.reverseMap.Get(full)
 	if !exists {
 		return entity.URL{}, entity.ErrNotFound
 	}

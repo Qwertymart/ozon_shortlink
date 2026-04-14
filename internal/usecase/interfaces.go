@@ -13,6 +13,6 @@ type URLRepository interface{
 	GetByShort(ctx context.Context, short string) (entity.URL, error)
 
 	GetNextID(ctx context.Context) (uint64, error)
-	
-	// GetByFull(ctx context.Context, full string) (entity.URL, error)
+
+	GetByFull(ctx context.Context, full string) (entity.URL, error)
 }
