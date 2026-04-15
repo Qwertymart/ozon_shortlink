@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"log"
 	"net/http"
@@ -20,8 +19,6 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-//go:embed migrations/*.sql
-var embedMigrations embed.FS
 
 func main() {
 	cfg := config.Load()
@@ -63,7 +60,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("Server forced to shutdown: %v", err)
 	}
@@ -76,7 +73,7 @@ func runMigrations(pool *pgxpool.Pool) {
 	// закрываем только обертку stdlib
 	defer db.Close()
 
-	goose.SetBaseFS(embedMigrations)
+	goose.SetBaseFS(postgres.EmbedMigrations)
 
 	if err := goose.SetDialect("postgres"); err != nil {
 		log.Fatalf("Failed to set goose dialect: %v", err)
