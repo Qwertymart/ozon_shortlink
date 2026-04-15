@@ -1,19 +1,27 @@
 package base63
 
-import "strings"
-
-const (
-	alphabet  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-	base      = uint64(len(alphabet))
-	resultLen = 10
+import (
+	"errors"
+	"strings"
 )
 
+const (
+	alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+	base     = uint64(len(alphabet))
+	MaxID    = 98461329465662060 
+)
+
+var ErrIDOverflow = errors.New("ID exceeds maximum allowed value for 10-character encoding")
+
 func Encode(n uint64) (string, error) {
+	if n > MaxID {
+        return "", ErrIDOverflow
+    }
 	var sb strings.Builder
 
 	// генерация символов
 	for n > 0 {
-		if err := sb.WriteByte(alphabet[n%base]); err != nil{
+		if err := sb.WriteByte(alphabet[n%base]); err != nil {
 			return "", err
 		}
 		n /= base
