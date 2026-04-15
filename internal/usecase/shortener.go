@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"net/url"
 
 	"github.com/Qwertymart/ozon_shortlink/internal/entity"
 	"github.com/Qwertymart/ozon_shortlink/pkg/base63"
@@ -19,8 +20,8 @@ func NewShortener(repo URLRepository) *ShortenerUseCase {
 }
 
 func (u *ShortenerUseCase) Create(ctx context.Context, originalURL string) (string, error) {
-	if originalURL == "" {
-		return "", entity.ErrInvalidFormat
+	if err := validateURL(originalURL); err != nil {
+		return "", err
 	}
 
 	// идемпотентность
@@ -33,13 +34,11 @@ func (u *ShortenerUseCase) Create(ctx context.Context, originalURL string) (stri
 		return "", err
 	}
 
-	// генерация id
 	id, err := u.repo.GetNextID(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	// id -> base63
 	shortURL, err := base63.Encode(id)
 	if err != nil {
 		return "", err
@@ -52,8 +51,7 @@ func (u *ShortenerUseCase) Create(ctx context.Context, originalURL string) (stri
 
 	err = u.repo.Save(ctx, urlEntity)
 	if err != nil {
-		// ловим race condition, если другая горутина успела сохранить этот же URL
-		// просто возвращаем уже созданную ссылку
+		// обработка Race Condition
 		if errors.Is(err, entity.ErrConflict) {
 			existingURL, getErr := u.repo.GetByFull(ctx, originalURL)
 			if getErr != nil {
@@ -67,7 +65,6 @@ func (u *ShortenerUseCase) Create(ctx context.Context, originalURL string) (stri
 	return shortURL, nil
 }
 
-
 func (u *ShortenerUseCase) Get(ctx context.Context, shortURL string) (string, error) {
 	if len(shortURL) != 10 {
 		return "", entity.ErrInvalidFormat
@@ -79,4 +76,21 @@ func (u *ShortenerUseCase) Get(ctx context.Context, shortURL string) (string, er
 	}
 
 	return urlEntity.Full, nil
+}
+
+func validateURL(rawURL string) error {
+	if rawURL == "" {
+		return entity.ErrInvalidFormat
+	}
+	
+	parsed, err := url.ParseRequestURI(rawURL)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return entity.ErrInvalidFormat
+	}
+
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return entity.ErrInvalidFormat
+	}
+
+	return nil
 }
