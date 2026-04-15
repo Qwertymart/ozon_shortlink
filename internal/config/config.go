@@ -10,6 +10,7 @@ import (
 type Config struct {
 	DatabaseDSN string
 	ServerPort  string
+	StorageType string
 }
 
 func Load() *Config {
@@ -27,8 +28,14 @@ func Load() *Config {
 		port = "8080"
 	}
 
+	storageType := os.Getenv("STORAGE_TYPE")
+    if storageType == "" {
+        storageType = "postgres" 
+    }
+
 	return &Config{
 		DatabaseDSN: dsn,
 		ServerPort:  port,
+		StorageType: storageType,
 	}
 }

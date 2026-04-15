@@ -9,13 +9,13 @@ import (
 
 type MemoryRepository struct {
 	db         *inmemory.Storage
-	reverseMap *inmemory.Storage // вторая база для поиска по полному ключу 
+	reverseMap *inmemory.Storage // вторая база для поиска по полному ключу
 }
 
-func NewMemoryRepository(db *inmemory.Storage, reverse *inmemory.Storage) *MemoryRepository {
+func NewRepository() *MemoryRepository {
 	return &MemoryRepository{
-		db:         db,
-		reverseMap: reverse,
+		db:         inmemory.NewStorage(), 
+		reverseMap: inmemory.NewStorage(),
 	}
 }
 
@@ -23,7 +23,11 @@ func (r *MemoryRepository) GetNextID(ctx context.Context) (uint64, error) {
 	return r.db.IncrAndGet(), nil
 }
 
-func (r *MemoryRepository) Save(ctx context.Context, url entity.URL) error { 
+func (r *MemoryRepository) Save(ctx context.Context, url entity.URL) error {
+	if _, exists := r.reverseMap.Get(url.Full); exists {
+        return entity.ErrConflict
+    }
+	
 	r.db.Set(url.Short, url.Full)
 	r.reverseMap.Set(url.Full, url.Short)
 	return nil

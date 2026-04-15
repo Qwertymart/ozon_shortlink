@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Qwertymart/ozon_shortlink/internal/config"
+	inmemory "github.com/Qwertymart/ozon_shortlink/internal/repository/in_memory"
 	"github.com/Qwertymart/ozon_shortlink/internal/repository/postgres"
 	transport "github.com/Qwertymart/ozon_shortlink/internal/transport/http"
 	"github.com/Qwertymart/ozon_shortlink/internal/usecase"
@@ -19,19 +20,28 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-
 func main() {
 	cfg := config.Load()
 
-	pool, err := pgxpool.New(context.Background(), cfg.DatabaseDSN)
-	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+	var repo usecase.URLRepository
+
+	switch cfg.StorageType {
+	case "memory":
+		log.Println("Using In-Memory storage")
+		repo = inmemory.NewRepository()
+	case "postgres":
+		log.Println("Using Postgres storage")
+		pool, err := pgxpool.New(context.Background(), cfg.DatabaseDSN)
+		if err != nil {
+			log.Fatalf("Failed to connect to database: %v", err)
+		}
+		defer pool.Close()
+
+		runMigrations(pool)
+		repo = postgres.NewRepository(pool)
+	default:
+		log.Fatalf("Unknown storage type: %s", cfg.StorageType)
 	}
-	defer pool.Close()
-
-	runMigrations(pool)
-
-	repo := postgres.NewRepository(pool)
 	service := usecase.NewShortener(repo)
 	handler := transport.NewHandler(service)
 
